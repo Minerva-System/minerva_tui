@@ -19,14 +19,21 @@ type LoginResponse struct {
 	Tenant string `json:"tenant"`
 }
 
+type UserInfo struct {
+	ID    int    `json:"id"`
+	Login string `json:"login"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
 type DefaultResponse struct {
 	Message string `json:"message"`
 }
 
 type MinervaClient struct {
-	url     string
-	tenant  string
-	client  *http.Client
+	url    string
+	tenant string
+	client *http.Client
 }
 
 func Create(url string, tenant string) (MinervaClient, error) {
@@ -34,13 +41,13 @@ func Create(url string, tenant string) (MinervaClient, error) {
 	if err != nil {
 		return MinervaClient{}, err
 	}
-	
+
 	return MinervaClient{
-		url: url,
+		url:    url,
 		tenant: tenant,
 		client: &http.Client{
 			Timeout: 10 * time.Second,
-			Jar: jar,
+			Jar:     jar,
 		},
 	}, nil
 }
@@ -80,7 +87,7 @@ func (c *MinervaClient) Login(req LoginRequest) (int, LoginResponse, string) {
 
 func (c *MinervaClient) Logout() (int, DefaultResponse, string) {
 	var res DefaultResponse
-	
+
 	url := c.Url("/logout")
 	response, err := c.client.Post(url, "", nil)
 	if err != nil {
@@ -91,6 +98,25 @@ func (c *MinervaClient) Logout() (int, DefaultResponse, string) {
 	err = json.NewDecoder(response.Body).Decode(&res)
 	if err != nil {
 		return 0, DefaultResponse{}, fmt.Sprintf("Erro: %v", err)
+	}
+
+	return response.StatusCode, res, ""
+}
+
+func (c *MinervaClient) UserList(page int) (int, []UserInfo, string) {
+	res := make([]UserInfo, 0)
+
+	url := c.Url(fmt.Sprintf("/user?page=%d", page))
+	response, err := c.client.Get(url)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+	
+	defer response.Body.Close()
+
+	err = json.NewDecoder(response.Body).Decode(&res)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
 
 	return response.StatusCode, res, ""

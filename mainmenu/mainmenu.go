@@ -2,11 +2,11 @@ package mainmenu
 
 import (
 	"fmt"
-	"net/http"
 	"github.com/charmbracelet/bubbles/list"
-	api "luksamuk/minerva_tui/client"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	api "luksamuk/minerva_tui/client"
+	"net/http"
 )
 
 var style = lipgloss.NewStyle().Margin(1, 2)
@@ -20,8 +20,9 @@ func (i item) Description() string { return i.desc }
 func (i item) FilterValue() string { return i.title }
 
 type Model struct {
-	Client  *api.MinervaClient
-	list    list.Model
+	Option string
+	Client *api.MinervaClient
+	list   list.Model
 }
 
 func Create() Model {
@@ -39,10 +40,11 @@ func Create() Model {
 	itemlist.Title = "Menu Principal"
 	itemlist.KeyMap.Quit.SetEnabled(false)
 	itemlist.SetShowStatusBar(true)
-	
+
 	return Model{
+		Option: "",
 		Client: nil,
-		list: itemlist,
+		list:   itemlist,
 	}
 }
 
@@ -58,15 +60,16 @@ func (m Model) Init() tea.Cmd {
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "enter":
-			i, ok := m.list.SelectedItem().(item)			
+			i, ok := m.list.SelectedItem().(item)
 			if ok {
 				m.list.NewStatusMessage(i.Title())
-				if i.Title() == "Logout" {
+				m.Option = i.Title()
+				switch i.Title() {
+				case "Logout":
 					code, _, errmsg := m.Client.Logout()
 					if errmsg != "" {
 						m.list.NewStatusMessage(errmsg)
