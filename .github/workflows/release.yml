@@ -1,0 +1,56 @@
+name: Generate Version
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: golang:1.18.3-alpine3.16
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build (Linux/amd64)
+        env:
+          - GOOS: linux
+          - GOARCH: amd64
+        run:
+          go build .
+          mv minerva_tui minerva_tui.linux.amd64
+
+      - name: Build (Windows/amd64)
+        env:
+          - GOOS: windows
+          - GOARCH: amd64
+        run:
+          go build .
+          mv minerva_tui.exe minerva_tui.windows.amd64.exe
+
+      - name: Build (Linux/arm64)
+        env:
+          - GOOS: linux
+          - GOARCH: arm64
+        run:
+          go build .
+          mv minerva_tui minerva_tui.linux.arm64
+
+      # - name: Upload artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: builds
+      #     path: |
+      #       minerva_tui.windows.amd64.exe
+      #       minerva_tui.linux.amd64
+      #       minerva_tui.linux.arm64
+
+      - name: Create release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "minerva_tui.*"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+          
+          

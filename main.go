@@ -1,3 +1,4 @@
+// Default package for `minerva_tui`.
 package main
 
 import (
@@ -13,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// Model for the application.
 type App struct {
 	ready       bool
 	currentView int
@@ -22,10 +24,12 @@ type App struct {
 	userform    userform.Model
 }
 
+// Function for Bubble Tea initialization of the model.
 func (m App) Init() tea.Cmd {
 	return nil
 }
 
+// Function for updating the screens on events.
 func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -95,6 +99,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+// Function for rendering the screens.
 func (m App) View() string {
 	if m.ready {
 		switch m.currentView {
@@ -111,6 +116,7 @@ func (m App) View() string {
 	return ""
 }
 
+// Creates a new application model.
 func CreateApp() App {
 	return App{
 		currentView: 0,
@@ -121,6 +127,7 @@ func CreateApp() App {
 	}
 }
 
+// Main entry point.
 func main() {
 	if err := tea.NewProgram(CreateApp(), tea.WithAltScreen()).Start(); err != nil {
 		fmt.Printf("Erro ao executar o programa:\n%v\n", err)
