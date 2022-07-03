@@ -3,6 +3,7 @@ module luksamuk/minerva_tui
 go 1.18
 
 require (
+	github.com/brianvoe/gofakeit/v6 v6.17.0
 	github.com/calyptia/go-bubble-table v0.2.1
 	github.com/charmbracelet/bubbles v0.12.0
 	github.com/charmbracelet/bubbletea v0.22.0

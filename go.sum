@@ -1,5 +1,7 @@
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
+github.com/brianvoe/gofakeit/v6 v6.17.0 h1:obbQTJeHfktJtiZzq0Q1bEpsNUs+yHrYlPVWt7BtmJ4=
+github.com/brianvoe/gofakeit/v6 v6.17.0/go.mod h1:Ow6qC71xtwm79anlwKRlWZW6zVq9D2XHE4QSSMP/rU8=
 github.com/calyptia/go-bubble-table v0.2.1 h1:NWcVRyGCLuP7QIA29uUFSY+IjmWcmUWHjy5J/CPb0Rk=
 github.com/calyptia/go-bubble-table v0.2.1/go.mod h1:gJvzUOUzfQeA9JmgLumyJYWJMtuRQ7WxxTwc9tjEiGw=
 github.com/charmbracelet/bubbles v0.12.0 h1:fxb9U9yI60Hek3tcPmMTFya5NhvPrqpkpyMaNngFh7A=

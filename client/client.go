@@ -26,6 +26,13 @@ type UserInfo struct {
 	Email string `json:"email"`
 }
 
+type NewUserRequest struct {
+	Login    string `json:"login"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type DefaultResponse struct {
 	Message string `json:"message"`
 }
@@ -111,7 +118,7 @@ func (c *MinervaClient) UserList(page int) (int, []UserInfo, string) {
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
-	
+
 	defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&res)
@@ -120,4 +127,53 @@ func (c *MinervaClient) UserList(page int) (int, []UserInfo, string) {
 	}
 
 	return response.StatusCode, res, ""
+}
+
+func (c *MinervaClient) UserCreate(req NewUserRequest) (int, UserInfo, string) {
+	res := UserInfo{}
+
+	url := c.Url("/user")
+	payload, err := json.Marshal(req)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+
+	buffer := bytes.NewBuffer(payload)
+	response, err := c.client.Post(url, "application/json; charset=utf-8", buffer)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+
+	defer response.Body.Close()
+	if response.StatusCode > 299 {
+		errRes := DefaultResponse{}
+		err = json.NewDecoder(response.Body).Decode(&errRes)
+		if err != nil {
+			return 0, res, fmt.Sprintf("Erro: %v", err)
+		}
+		return response.StatusCode, res, fmt.Sprintf("Erro: %s", errRes.Message)
+	}
+
+	err = json.NewDecoder(response.Body).Decode(&res)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+
+	return response.StatusCode, res, ""
+}
+
+
+func (c *MinervaClient) UserRemove(index int64) (int, string) {
+	url := c.Url(fmt.Sprintf("/user/%d", index))
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return 0, fmt.Sprintf("Erro: %v", err)
+	}
+	
+	response, err := c.client.Do(req)
+	if err != nil {
+		return 0, fmt.Sprintf("Erro: %v", err)
+	}
+	defer response.Body.Close()
+	return response.StatusCode, ""
 }

@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
-	tea "github.com/charmbracelet/bubbletea"
 	"luksamuk/minerva_tui/hostscreen"
 	"luksamuk/minerva_tui/mainmenu"
 	"luksamuk/minerva_tui/user_list"
+	"luksamuk/minerva_tui/userform"
 	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 type App struct {
@@ -15,6 +17,7 @@ type App struct {
 	host        hostscreen.Model
 	mainmenu    mainmenu.Model
 	userlist    user_list.Model
+	userform    userform.Model
 }
 
 func (m App) Init() tea.Cmd {
@@ -33,6 +36,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.mainmenu.SetSize(msg.Width, msg.Height)
 		m.userlist.SetSize(msg.Width, msg.Height)
+		m.userform.SetSize(msg.Width, msg.Height)
 		m.ready = true
 	}
 	
@@ -44,6 +48,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentView = 1
 				m.mainmenu.Client = &m.host.Client
 				m.userlist.Client = &m.host.Client
+				m.userform.Client = &m.host.Client
 				cmd = tea.Batch(cmd, tea.EnterAltScreen)
 			}
 		case 1:
@@ -52,13 +57,24 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.currentView = 2
 				m.mainmenu.Option = ""
 				m.userlist.Fetch()
-				
 			}
 		case 2:
 			m.userlist, cmd = m.userlist.Update(msg)
-			if m.userlist.Option == "quit" {
-				m.currentView = 1
+			if m.userlist.Option != "" {
+				switch m.userlist.Option {
+				case "quit":
+					m.currentView = 1
+				case "create":
+					m.currentView = 3
+				}
 				m.userlist.Option = ""
+			}
+		case 3:
+			m.userform, cmd = m.userform.Update(msg)
+			if m.userform.Option == "quit" {
+				m.currentView = 2
+				m.userform.Option = ""
+				m.userlist.Fetch()
 			}
 		}
 	}
@@ -75,6 +91,8 @@ func (m App) View() string {
 			return m.mainmenu.View()
 		case 2:
 			return m.userlist.View()
+		case 3:
+			return m.userform.View()
 		}
 	}
 	return ""
@@ -86,6 +104,7 @@ func CreateApp() App {
 		host:        hostscreen.Create(),
 		mainmenu:    mainmenu.Create(),
 		userlist:    user_list.Create(),
+		userform:    userform.Create(),
 	}
 }
 
