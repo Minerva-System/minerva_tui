@@ -15,26 +15,26 @@ jobs:
 
       - name: Build (Linux/amd64)
         env:
-          - GOOS: linux
-          - GOARCH: amd64
+          GOOS: linux
+          GOARCH: amd64
         run:
-          go build .
+          go build . &&
           mv minerva_tui minerva_tui.linux.amd64
 
       - name: Build (Windows/amd64)
         env:
-          - GOOS: windows
-          - GOARCH: amd64
+          GOOS: windows
+          GOARCH: amd64
         run:
-          go build .
+          go build . &&
           mv minerva_tui.exe minerva_tui.windows.amd64.exe
 
       - name: Build (Linux/arm64)
         env:
-          - GOOS: linux
-          - GOARCH: arm64
+          GOOS: linux
+          GOARCH: arm64
         run:
-          go build .
+          go build . &&
           mv minerva_tui minerva_tui.linux.arm64
 
       # - name: Upload artifacts
