@@ -1,4 +1,4 @@
-package user_list
+package userlist
 
 import (
 	"fmt"
@@ -79,7 +79,7 @@ type Model struct {
 	Client    *api.MinervaClient
 	keys      keyMap
 	help      help.Model
-	table     table.Model
+	Table     table.Model
 	page      int
 	maxPages  int
 	paginator paginator.Model
@@ -98,7 +98,7 @@ func Create() Model {
 		Client:    nil,
 		keys:      keys,
 		help:      help.New(),
-		table:     table,
+		Table:     table,
 		page:      0,
 		maxPages:  1,
 		paginator: p,
@@ -129,8 +129,8 @@ func (m *Model) Fetch() {
 				data[i].Email,
 			}
 		}
-		m.table.SetRows(rows)
-		m.table.GoPageUp()
+		m.Table.SetRows(rows)
+		m.Table.GoPageUp()
 		m.status = ""
 	}
 
@@ -151,7 +151,7 @@ func (m *Model) SetSize(width int, height int) {
 		diff = 6
 	}
 
-	m.table.SetSize(width, height-diff)
+	m.Table.SetSize(width, height-diff)
 	m.help.Width = width
 }
 
@@ -178,7 +178,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 				m.Fetch()
 			}
 		case key.Matches(msg, m.keys.Remove):
-			row := m.table.SelectedRow().(table.SimpleRow)
+			row := m.Table.SelectedRow().(table.SimpleRow)
 			index, err := strconv.ParseInt(row[0].(string), 10, 64)
 			if row[1].(string) == "admin" {
 				m.status = "Erro: Não é possível remover o administrador do sistema."
@@ -193,6 +193,8 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 					m.status = fmt.Sprintf("\"%s\" removido.", row[1].(string))
 				}
 			}
+		case key.Matches(msg, m.keys.Edit):
+			m.Option = "edit"
 		}
 	}
 
@@ -200,12 +202,12 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	m.paginator.Page = m.page
 
 	var tablecmd tea.Cmd
-	m.table, tablecmd = m.table.Update(msg)
+	m.Table, tablecmd = m.Table.Update(msg)
 	return m, tea.Batch(cmd, tablecmd)
 }
 
 func (m Model) View() string {
-	s := m.table.View() + "\n"
+	s := m.Table.View() + "\n"
 	s += m.paginator.View() + "\n"
 	s += m.status + "\n"
 	s += m.help.View(m.keys)

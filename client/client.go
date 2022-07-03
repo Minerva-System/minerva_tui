@@ -177,3 +177,38 @@ func (c *MinervaClient) UserRemove(index int64) (int, string) {
 	defer response.Body.Close()
 	return response.StatusCode, ""
 }
+
+func (c *MinervaClient) UserUpdate(index int64, data NewUserRequest) (int, UserInfo, string) {
+	res := UserInfo{}
+	url := c.Url(fmt.Sprintf("/user/%d", index))
+	payload, err := json.Marshal(data)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+
+	buffer := bytes.NewBuffer(payload)
+	req, err := http.NewRequest("PUT", url, buffer)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+	response, err := c.client.Do(req)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode > 299 {
+		errRes := DefaultResponse{}
+		err = json.NewDecoder(response.Body).Decode(&errRes)
+		if err != nil {
+			return 0, res, fmt.Sprintf("Erro: %v", err)
+		}
+		return response.StatusCode, res, fmt.Sprintf("Erro: %s", errRes.Message)
+	}
+
+	err = json.NewDecoder(response.Body).Decode(&res)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+
+	return response.StatusCode, res, ""
+}

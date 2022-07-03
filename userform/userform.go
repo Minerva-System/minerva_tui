@@ -67,6 +67,7 @@ var (
 )
 
 type Model struct {
+	id       int64
 	Option   string
 	Client   *api.MinervaClient
 	keys     keyMap
@@ -77,6 +78,22 @@ type Model struct {
 	name     textinput.Model
 	email    textinput.Model
 	pass     textinput.Model
+}
+
+func (m *Model) PrepareEdit(id int64, login string, name string, email string) {
+	m.Reset()
+	m.id = id
+	m.login.SetValue(login)
+	m.name.SetValue(name)
+	m.email.SetValue(email)
+	m.pass.SetValue("")
+
+	// Set focus on Name field since we're not supposed to change the login!
+	m.taborder = 1
+	m.login.Blur()
+	m.name.Focus()
+	m.email.Blur()
+	m.pass.Blur()
 }
 
 func Create() Model {
@@ -110,6 +127,7 @@ func Create() Model {
 	pass.Prompt = "Senha:   "
 
 	return Model{
+		id:       0,
 		Client:   nil,
 		Option:   "",
 		keys:     keys,
@@ -132,6 +150,7 @@ func (m *Model) SetSize(width int, height int) {
 }
 
 func (m *Model) Reset() {
+	m.id = 0
 	m.taborder = 0
 	m.login.SetValue("")
 	m.name.SetValue("")
@@ -139,8 +158,24 @@ func (m *Model) Reset() {
 	m.pass.SetValue("")
 }
 
+func (m *Model) PerformRequest() (int, api.UserInfo, string) {
+	request := api.NewUserRequest{
+		Login:    m.login.Value(),
+		Name:     m.name.Value(),
+		Email:    m.email.Value(),
+		Password: m.pass.Value(),
+	}
+	
+	if m.id == 0 {
+		return m.Client.UserCreate(request)
+	} else {
+		return m.Client.UserUpdate(m.id, request)
+	}
+}
+
 func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
+	
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 	case tea.KeyMsg:
@@ -148,6 +183,7 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Help):
 			m.help.ShowAll = !m.help.ShowAll
 		case key.Matches(msg, m.keys.Cancel):
+			m.Reset()
 			m.Option = "quit"
 		case key.Matches(msg, m.keys.Back):
 			if m.taborder > 0 {
@@ -156,17 +192,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Confirm):
 			if m.taborder < 4 {
 				if m.taborder == 0 {
-					m.login.SetValue(
-						strings.Replace(strings.ToLower(m.login.Value()), " ", "", -1))
+					m.login.SetValue(strings.Replace(strings.ToLower(m.login.Value()), " ", "", -1))
 				}
 				m.taborder++
 			} else if m.taborder == 4 {
-				code, _, msg := m.Client.UserCreate(api.NewUserRequest{
-					Login:    m.login.Value(),
-					Name:     m.name.Value(),
-					Email:    m.email.Value(),
-					Password: m.pass.Value(),
-				})
+				code, _, msg := m.PerformRequest()
 
 				if msg != "" {
 					m.status = msg
@@ -180,18 +210,21 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Next):
 			if m.taborder < 4 {
 				if m.taborder == 0 {
-					m.login.SetValue(
-						strings.Replace(strings.ToLower(m.login.Value()), " ", "", -1))
+					m.login.SetValue(strings.Replace(strings.ToLower(m.login.Value()), " ", "", -1))
 				}
 				m.taborder++
 			}
 		case key.Matches(msg, m.keys.Mock):
 			name := gofakeit.Name()
 			username := strings.Replace(strings.ToLower(name), " ", "", -1)
-			m.login.SetValue(username)
+			if m.id == 0 {
+				m.login.SetValue(username)
+			}
 			m.name.SetValue(name)
 			m.email.SetValue(gofakeit.Email())
-			m.pass.SetValue("123456")
+			if m.id == 0 {
+				m.pass.SetValue("123456")
+			}
 			m.taborder = 4
 			m.status = "Dados preenchidos com sucesso."
 		default:
@@ -207,6 +240,11 @@ func (m Model) Update(msg tea.Msg) (Model, tea.Cmd) {
 			case 4:
 			}
 		}
+	}
+
+	// Prevent editions on login if modifying a record
+	if (m.id > 0) && (m.taborder == 0) {
+		m.taborder = 1
 	}
 
 	// Switch focus

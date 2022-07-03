@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	table "github.com/calyptia/go-bubble-table"
 	"luksamuk/minerva_tui/hostscreen"
 	"luksamuk/minerva_tui/mainmenu"
-	"luksamuk/minerva_tui/user_list"
 	"luksamuk/minerva_tui/userform"
+	"luksamuk/minerva_tui/userlist"
 	"os"
+	"strconv"
 
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -16,7 +18,7 @@ type App struct {
 	currentView int
 	host        hostscreen.Model
 	mainmenu    mainmenu.Model
-	userlist    user_list.Model
+	userlist    userlist.Model
 	userform    userform.Model
 }
 
@@ -39,7 +41,7 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.userform.SetSize(msg.Width, msg.Height)
 		m.ready = true
 	}
-	
+
 	if m.ready {
 		switch m.currentView {
 		case 0:
@@ -66,6 +68,17 @@ func (m App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.currentView = 1
 				case "create":
 					m.currentView = 3
+				case "edit":
+					row := m.userlist.Table.SelectedRow().(table.SimpleRow)
+					index, _ := strconv.ParseInt(row[0].(string), 10, 64)
+					m.userform.PrepareEdit(
+						index,
+						row[1].(string), // login
+						row[2].(string), // name
+						row[3].(string), // email
+					)
+					m.currentView = 3
+					m.userlist.Option = ""
 				}
 				m.userlist.Option = ""
 			}
@@ -103,7 +116,7 @@ func CreateApp() App {
 		currentView: 0,
 		host:        hostscreen.Create(),
 		mainmenu:    mainmenu.Create(),
-		userlist:    user_list.Create(),
+		userlist:    userlist.Create(),
 		userform:    userform.Create(),
 	}
 }
