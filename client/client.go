@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/cookiejar"
 	"time"
 )
 
@@ -40,21 +39,17 @@ type DefaultResponse struct {
 type MinervaClient struct {
 	url    string
 	tenant string
+	token  string
 	client *http.Client
 }
 
 func Create(url string, tenant string) (MinervaClient, error) {
-	jar, err := cookiejar.New(nil)
-	if err != nil {
-		return MinervaClient{}, err
-	}
-
 	return MinervaClient{
 		url:    url,
 		tenant: tenant,
+		token:  "",
 		client: &http.Client{
 			Timeout: 10 * time.Second,
-			Jar:     jar,
 		},
 	}, nil
 }
@@ -89,14 +84,24 @@ func (c *MinervaClient) Login(req LoginRequest) (int, LoginResponse, string) {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
 
+	// Save token
+	c.token = res.Token
+
 	return response.StatusCode, res, ""
 }
 
 func (c *MinervaClient) Logout() (int, DefaultResponse, string) {
 	var res DefaultResponse
 
-	url := c.Url("/logout")
-	response, err := c.client.Post(url, "", nil)
+	url := c.Url("/" + c.Tenant() + "/logout")
+
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		return 0, DefaultResponse{}, fmt.Sprintf("Erro: %v", err)
+	}
+
+	req.Header.Add("Authorization", "Bearer " + c.token)
+	response, err := c.client.Do(req)
 	if err != nil {
 		return 0, DefaultResponse{}, fmt.Sprintf("Erro: %v", err)
 	}
@@ -113,8 +118,14 @@ func (c *MinervaClient) Logout() (int, DefaultResponse, string) {
 func (c *MinervaClient) UserList(page int) (int, []UserInfo, string) {
 	res := make([]UserInfo, 0)
 
-	url := c.Url(fmt.Sprintf("/user?page=%d", page))
-	response, err := c.client.Get(url)
+	url := c.Url(fmt.Sprintf("/" + c.Tenant() + "/user?page=%d", page))
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+	
+	req.Header.Add("Authorization", "Bearer " + c.token)
+	response, err := c.client.Do(req)
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
@@ -129,17 +140,23 @@ func (c *MinervaClient) UserList(page int) (int, []UserInfo, string) {
 	return response.StatusCode, res, ""
 }
 
-func (c *MinervaClient) UserCreate(req NewUserRequest) (int, UserInfo, string) {
+func (c *MinervaClient) UserCreate(req_data NewUserRequest) (int, UserInfo, string) {
 	res := UserInfo{}
 
-	url := c.Url("/user")
-	payload, err := json.Marshal(req)
+	url := c.Url("/" + c.Tenant() + "/user")
+	payload, err := json.Marshal(req_data)
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
 
 	buffer := bytes.NewBuffer(payload)
-	response, err := c.client.Post(url, "application/json; charset=utf-8", buffer)
+	req, err := http.NewRequest("POST", url, buffer)
+	if err != nil {
+		return 0, res, fmt.Sprintf("Erro: %v", err)
+	}
+	req.Header.Add("Authorization", "Bearer " + c.token)
+	req.Header.Add("Content-Type", "application/json; charset=utf-8")
+	response, err := c.client.Do(req)
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
@@ -164,12 +181,13 @@ func (c *MinervaClient) UserCreate(req NewUserRequest) (int, UserInfo, string) {
 
 
 func (c *MinervaClient) UserRemove(index int64) (int, string) {
-	url := c.Url(fmt.Sprintf("/user/%d", index))
+	url := c.Url(fmt.Sprintf("/" + c.Tenant() + "/user/%d", index))
 	req, err := http.NewRequest("DELETE", url, nil)
 	if err != nil {
 		return 0, fmt.Sprintf("Erro: %v", err)
 	}
-	
+
+	req.Header.Add("Authorization", "Bearer " + c.token)
 	response, err := c.client.Do(req)
 	if err != nil {
 		return 0, fmt.Sprintf("Erro: %v", err)
@@ -180,7 +198,7 @@ func (c *MinervaClient) UserRemove(index int64) (int, string) {
 
 func (c *MinervaClient) UserUpdate(index int64, data NewUserRequest) (int, UserInfo, string) {
 	res := UserInfo{}
-	url := c.Url(fmt.Sprintf("/user/%d", index))
+	url := c.Url(fmt.Sprintf("/" + c.Tenant() + "/user/%d", index))
 	payload, err := json.Marshal(data)
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
@@ -191,6 +209,8 @@ func (c *MinervaClient) UserUpdate(index int64, data NewUserRequest) (int, UserI
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
 	}
+
+	req.Header.Add("Authorization", "Bearer " + c.token)
 	response, err := c.client.Do(req)
 	if err != nil {
 		return 0, res, fmt.Sprintf("Erro: %v", err)
